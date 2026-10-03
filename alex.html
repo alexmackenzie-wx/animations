@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Alex, Sketched</title>
+</head>
+<body>
+<style>
+  /* Layout: a single sheet with the name, controls tucked underneath */
+  :root {
+    --bg: #f4f6f9;
+    --sheet: #ffffff;
+    --ink: #1c2b52;      /* ballpoint blue */
+    --accent: #d9482b;   /* red marker for the circle */
+    --muted: #66708a;
+    --line: #dde2ec;
+    --font-ui: system-ui, -apple-system, sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #101319; --sheet: #181c24; --ink: #dbe4ff; --accent: #ff7a5c;
+      --muted: #8e97ad; --line: #2a303c; color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #101319; --sheet: #181c24; --ink: #dbe4ff; --accent: #ff7a5c;
+    --muted: #8e97ad; --line: #2a303c; color-scheme: dark;
+  }
+
+  html, body { height: 100%; }
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--font-ui);
+    display: grid;
+    place-items: center;
+    padding-inline: 16px;
+  }
+  main { width: min(720px, 100%); display: grid; gap: 16px; }
+
+  .sheet {
+    background: var(--sheet);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    /* faint ruled lines, like a notepad */
+    background-image: repeating-linear-gradient(to bottom, transparent 0 39px, var(--line) 39px 40px);
+  }
+  #name { display: block; width: 100%; height: auto; color: var(--ink); }
+  #name .marker { color: var(--accent); }
+
+  .controls {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px 24px;
+    color: var(--muted);
+    font-size: 0.875rem;
+  }
+  .controls label { display: flex; align-items: center; gap: 10px; }
+  input[type="range"] { accent-color: var(--accent); width: 140px; }
+
+  button {
+    font: inherit;
+    font-weight: 600;
+    padding: 8px 18px;
+    border: 2px solid var(--ink);
+    border-radius: 999px;
+    background: transparent;
+    color: var(--ink);
+    cursor: pointer;
+  }
+  button:hover, button:focus-visible { background: var(--ink); color: var(--sheet); }
+  button:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+</style>
+
+<main>
+  <div class="sheet">
+    <svg id="name" viewBox="0 0 520 280" role="img" aria-label="The name Alex, drawn by hand and circled"></svg>
+  </div>
+  <div class="controls">
+    <label for="wobble">Wobble <input id="wobble" type="range" min="0.3" max="3" step="0.1" value="1.4"></label>
+    <span>Every redraw is a new take.</span>
+    <button id="redraw" type="button">Redraw</button>
+  </div>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/roughjs@4.6.6/bundled/rough.js"></script>
+<script>
+  // Each letter is a list of pen strokes on a 520×280 grid (baseline y≈205).
+  const STROKES = [
+    // A
+    { shape: 'linear', pts: [[60, 205], [108, 62], [156, 205]] },
+    { shape: 'linear', pts: [[78, 150], [140, 146]] },
+    // l
+    { shape: 'curve',  pts: [[204, 58], [200, 120], [198, 180], [206, 203], [228, 198]] },
+    // e
+    { shape: 'curve',  pts: [[258, 170], [308, 166], [312, 145], [288, 128], [260, 138], [250, 170], [262, 198], [290, 206], [320, 192]] },
+    // x
+    { shape: 'linear', pts: [[348, 132], [418, 204]] },
+    { shape: 'linear', pts: [[420, 130], [346, 206]] },
+    // underline, then the circle round the whole name
+    { shape: 'curve',  pts: [[50, 236], [190, 228], [330, 234], [450, 224]], width: 2 },
+    { shape: 'ellipse', cx: 252, cy: 145, w: 470, h: 230, marker: true },
+  ];
+
+  const PEN_SPEED = 0.9; // svg units per millisecond
+  const PEN_LIFT = 120;  // pause between strokes, ms
+
+  const svg = document.getElementById('name');
+  const wobble = document.getElementById('wobble');
+  const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  function render() {
+    svg.replaceChildren();
+    const rc = rough.svg(svg);
+    const seed = Math.floor(Math.random() * 2 ** 31);
+    let t = 300;
+
+    for (const s of STROKES) {
+      const opts = {
+        stroke: 'currentColor',
+        strokeWidth: s.width ?? 3,
+        roughness: Number(wobble.value),
+        bowing: 1.5,
+        seed,
+      };
+      const node = s.shape === 'ellipse'
+        ? rc.ellipse(s.cx, s.cy, s.w, s.h, { ...opts, strokeWidth: 2.5 })
+        : s.shape === 'curve' ? rc.curve(s.pts, opts) : rc.linearPath(s.pts, opts);
+      if (s.marker) node.classList.add('marker');
+      svg.appendChild(node);
+      if (reduceMotion) continue;
+
+      // Rough.js draws each stroke as two loose passes; the second trails the first.
+      let strokeEnd = t;
+      node.querySelectorAll('path').forEach((path, i) => {
+        const len = path.getTotalLength();
+        const duration = Math.max(len / PEN_SPEED, 180);
+        const delay = t + i * duration * 0.4;
+        path.style.strokeDasharray = len;
+        path.style.strokeDashoffset = len;
+        path.animate(
+          [{ strokeDashoffset: len }, { strokeDashoffset: 0 }],
+          { duration, delay, easing: 'cubic-bezier(0.45, 0, 0.55, 1)', fill: 'forwards' }
+        );
+        strokeEnd = Math.max(strokeEnd, delay + duration * (i === 0 ? 1 : 0.6));
+      });
+      t = strokeEnd + PEN_LIFT;
+    }
+  }
+
+  document.getElementById('redraw').addEventListener('click', render);
+  wobble.addEventListener('change', render);
+  render();
+</script>
+</body>
+</html>
