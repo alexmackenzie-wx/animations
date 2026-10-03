@@ -1,0 +1,227 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>CPU Trace</title>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&display=swap">
+</head>
+<body>
+<style>
+  /* Layout: one wide board, a thin mono caption row beneath it */
+  :root {
+    --bg: #e8ecf0;
+    --board: #f6f8fa;
+    --trace: #2b3644;   /* copper-free line work */
+    --muted: #748194;
+    --dot: #c6cdd6;
+    --gold: #b8740a;    /* contact gold, used for signals and cores */
+    --font-mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0a0d11; --board: #0e1318; --trace: #9aabbf; --muted: #66737f;
+      --dot: #1d252e; --gold: #ffb547; color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0a0d11; --board: #0e1318; --trace: #9aabbf; --muted: #66737f;
+    --dot: #1d252e; --gold: #ffb547; color-scheme: dark;
+  }
+
+  html, body { height: 100%; }
+  body {
+    background: var(--bg);
+    color: var(--trace);
+    font-family: var(--font-mono);
+    display: grid;
+    place-items: center;
+    padding-inline: 16px;
+  }
+  main { width: min(1100px, 100%); display: grid; gap: 14px; padding-block: 24px; }
+
+  .board { background: var(--board); border: 1px solid var(--dot); border-radius: 4px; overflow: hidden; }
+  #cpu { display: block; width: 100%; height: auto; }
+
+  #cpu .line   { fill: none; stroke: var(--trace); stroke-width: 1.5; stroke-linejoin: round; stroke-linecap: round; }
+  #cpu .pin    { stroke: var(--trace); stroke-width: 4; }
+  #cpu .via    { fill: var(--board); stroke: var(--trace); stroke-width: 1.5; }
+  #cpu .marker { fill: var(--trace); }
+  #cpu .core   { fill: var(--gold); opacity: 0.22; }
+  #cpu .dots   { fill: var(--dot); }
+  #cpu .signal { fill: none; stroke: var(--gold); stroke-width: 2.5; stroke-linecap: round; filter: drop-shadow(0 0 3px var(--gold)); }
+
+  .caption {
+    display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between;
+    gap: 10px 24px; color: var(--muted); font-size: 0.8rem; letter-spacing: 0.04em; text-transform: uppercase;
+  }
+  button {
+    font: inherit; color: var(--trace); background: transparent;
+    border: 1px solid var(--trace); border-radius: 2px; padding: 8px 16px; cursor: pointer;
+  }
+  button:hover, button:focus-visible { background: var(--trace); color: var(--board); }
+  button:focus-visible { outline: 2px solid var(--gold); outline-offset: 3px; }
+</style>
+
+<main>
+  <div class="board">
+    <svg id="cpu" viewBox="0 0 1200 760" role="img" aria-label="A processor chip drawing itself, with circuit traces fanning out and signals flowing in"></svg>
+  </div>
+  <div class="caption">
+    <span>36 pins · traces routed at 45° · signals inbound</span>
+    <button id="reroute" type="button">Re-route</button>
+  </div>
+</main>
+
+<script>
+  const NS = 'http://www.w3.org/2000/svg';
+  const svg = document.getElementById('cpu');
+  const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const EASE = 'cubic-bezier(0.65, 0, 0.35, 1)';
+
+  const CX = 600, CY = 380;
+  const PKG = 130;          // package half-width
+  const DIE = 70;           // die half-width
+  const PINS = 9;           // per side
+  const PIN_GAP = 24, PIN_LEN = 16;
+  const LEAD = 26;          // straight run before the 45° bend
+  const FAN = 16;           // extra spread per pin away from centre
+  const REACH = { top: 350, bottom: 350, left: 570, right: 570 }; // keep traces on the board
+
+  // Each side maps local (u = along the edge, d = distance out from centre) to board coordinates.
+  const SIDES = {
+    top:    (u, d) => [CX + u, CY - d],
+    right:  (u, d) => [CX + d, CY + u],
+    bottom: (u, d) => [CX - u, CY + d],
+    left:   (u, d) => [CX - d, CY - u],
+  };
+
+  let generation = 0;
+
+  const rand = (a, b) => a + Math.random() * (b - a);
+  function el(tag, attrs, parent = svg) {
+    const n = document.createElementNS(NS, tag);
+    for (const k in attrs) n.setAttribute(k, attrs[k]);
+    parent.appendChild(n);
+    return n;
+  }
+  const pathD = (pts) => 'M' + pts.map((p) => p.map((v) => v.toFixed(1)).join(' ')).join(' L');
+  const polyLength = (pts) => pts.slice(1).reduce((s, p, i) => s + Math.hypot(p[0] - pts[i][0], p[1] - pts[i][1]), 0);
+
+  function drawIn(node, delay, duration) {
+    node.setAttribute('pathLength', 1);
+    if (reduceMotion) return;
+    node.style.strokeDasharray = 1;
+    node.style.strokeDashoffset = 1;
+    node.animate([{ strokeDashoffset: 1 }, { strokeDashoffset: 0 }], { delay, duration, easing: EASE, fill: 'forwards' });
+  }
+  function popIn(node, delay, duration = 320) {
+    if (reduceMotion) return;
+    node.style.transformBox = 'fill-box';
+    node.style.transformOrigin = 'center';
+    node.animate(
+      [{ transform: 'scale(0)', opacity: 0 }, { transform: 'scale(1)', opacity: 1 }],
+      { delay, duration, easing: 'cubic-bezier(0.34, 1.56, 0.64, 1)', fill: 'backwards' }
+    );
+  }
+  function square(half) {
+    return `M${CX - half} ${CY - half} h${half * 2} v${half * 2} h${-half * 2} Z`;
+  }
+
+  function build() {
+    const gen = ++generation;
+    document.getAnimations().forEach((a) => a.cancel());
+    svg.replaceChildren();
+
+    // PCB dot grid
+    const defs = el('defs', {});
+    const pattern = el('pattern', { id: 'dots', width: 20, height: 20, patternUnits: 'userSpaceOnUse' }, defs);
+    el('circle', { cx: 10, cy: 10, r: 1.2, class: 'dots' }, pattern);
+    const grid = el('rect', { width: 1200, height: 760, fill: 'url(#dots)' });
+    if (!reduceMotion) grid.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 1200, easing: 'ease-out', fill: 'backwards' });
+
+    const traceLayer = el('g', {});
+    const signalLayer = el('g', {});
+    const chipLayer = el('g', {});
+
+    // Package, die and pin-1 marker
+    el('rect', { x: CX - PKG, y: CY - PKG, width: PKG * 2, height: PKG * 2, fill: 'var(--board)' }, chipLayer);
+    drawIn(el('path', { d: square(PKG), class: 'line' }, chipLayer), 100, 900);
+    drawIn(el('path', { d: square(DIE), class: 'line' }, chipLayer), 500, 700);
+    popIn(el('circle', { cx: CX - PKG + 18, cy: CY - PKG + 18, r: 5, class: 'marker' }, chipLayer), 950);
+
+    // 4×4 cores inside the die, lit in a diagonal wave
+    const cores = [];
+    const cell = 28, gap = 6, start = -DIE + 14;
+    for (let r = 0; r < 4; r++) {
+      for (let c = 0; c < 4; c++) {
+        const core = el('rect', {
+          x: CX + start + c * cell, y: CY + start + r * cell,
+          width: cell - gap, height: cell - gap, class: 'core',
+        }, chipLayer);
+        popIn(core, 2000 + (r + c) * 80);
+        cores.push(core);
+      }
+    }
+
+    // Pins and traces
+    const signals = [];
+    for (const [side, toBoard] of Object.entries(SIDES)) {
+      for (let i = 0; i < PINS; i++) {
+        const k = i - (PINS - 1) / 2;
+        const u = k * PIN_GAP;
+        const pinDelay = 1000 + Math.abs(k) * 45;
+        const [x1, y1] = toBoard(u, PKG);
+        const [x2, y2] = toBoard(u, PKG + PIN_LEN);
+        drawIn(el('line', { x1, y1, x2, y2, class: 'pin' }, chipLayer), pinDelay, 160);
+
+        if (Math.random() < 0.12) continue; // a few pins stay unrouted
+
+        const d0 = PKG + PIN_LEN;
+        const d1 = d0 + LEAD;
+        const bendEnd = d1 + Math.abs(k) * FAN;
+        const end = Math.min(bendEnd + rand(30, REACH[side] - bendEnd), REACH[side]);
+        const local = [[u, d0], [u, d1], [u + k * FAN, bendEnd], [u + k * FAN, end]];
+        const pts = local.map(([lu, ld]) => toBoard(lu, ld));
+
+        const len = polyLength(pts);
+        const traceDelay = 1300 + Math.abs(k) * 70 + rand(0, 140);
+        const traceDuration = len / 0.45;
+        drawIn(el('path', { d: pathD(pts), class: 'line' }, traceLayer), traceDelay, traceDuration);
+
+        const [vx, vy] = pts[pts.length - 1];
+        popIn(el('circle', { cx: vx, cy: vy, r: 4.5, class: 'via' }, traceLayer), traceDelay + traceDuration * 0.9);
+
+        // Signal path runs from the via back into the chip
+        const signal = el('path', { d: pathD([...pts].reverse()), class: 'signal' }, signalLayer);
+        signals.push({ node: signal, len });
+      }
+    }
+
+    if (reduceMotion) return;
+
+    // Signals: short gold dashes travelling inward; each arrival flashes a core
+    const DASH = 22;
+    function pulse({ node, len }, delay) {
+      if (gen !== generation) return;
+      node.style.strokeDasharray = `${DASH} ${len + DASH}`;
+      node.style.strokeDashoffset = DASH;
+      const a = node.animate(
+        [{ strokeDashoffset: DASH }, { strokeDashoffset: -len }],
+        { delay, duration: len * 3, easing: 'cubic-bezier(0.4, 0, 0.6, 1)' }
+      );
+      a.onfinish = () => {
+        if (gen !== generation) return;
+        const core = cores[Math.floor(Math.random() * cores.length)];
+        core.animate([{ opacity: 1 }, { opacity: 0.22 }], { duration: 600, easing: 'ease-out' });
+        pulse({ node, len }, rand(800, 6000));
+      };
+    }
+    signals.forEach((s) => pulse(s, 3200 + rand(0, 4000)));
+  }
+
+  document.getElementById('reroute').addEventListener('click', build);
+  build();
+</script>
+</body>
+</html>
