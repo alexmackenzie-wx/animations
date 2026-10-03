@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Drawing Animations</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <main>
+    <h1>Drawing Animations</h1>
+
+    <figure class="demo">
+      <svg class="drawing" viewBox="0 0 200 200" width="240" height="240" aria-label="A circle being drawn">
+        <!-- pathLength="1" normalises the length so the CSS works for any shape -->
+        <circle class="stroke" cx="100" cy="100" r="80" pathLength="1" transform="rotate(-90 100 100)" />
+      </svg>
+      <figcaption>Circle</figcaption>
+    </figure>
+
+    <button id="replay" type="button">Replay</button>
+  </main>
+
+  <script src="draw.js"></script>
+</body>
+</html>
