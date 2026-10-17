@@ -17,6 +17,7 @@ import { Drawing } from './Drawing';
 import { Grammar, type GrammarOptions } from './grammar';
 import { Search } from './search';
 import { highlightPlugin } from './highlight';
+import { SlashCommand } from './slash';
 
 /** Marks the top-level block holding the cursor, so focus mode can dim the rest. */
 const FocusBlock = Extension.create({
@@ -106,7 +107,7 @@ export function buildExtensions(hooks: AppHooks, grammar: Partial<GrammarOptions
     TableCell,
     Typography,
     Placeholder.configure({
-      placeholder: ({ node }) => (node.type.name === 'heading' ? 'Heading' : 'Start writing…'),
+      placeholder: ({ node }) => (node.type.name === 'heading' ? 'Heading' : 'Start writing, or type / for blocks…'),
       includeChildren: false,
     }),
     CharacterCount,
@@ -116,6 +117,7 @@ export function buildExtensions(hooks: AppHooks, grammar: Partial<GrammarOptions
     FocusBlock,
     Highlight,
     Shortcuts.configure(hooks),
+    SlashCommand.configure(hooks),
   ];
 }
 

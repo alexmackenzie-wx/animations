@@ -31,7 +31,7 @@ The app isn't code-signed. The first time you open it, right-click
 
 | | |
 | --- | --- |
-| **Writing** | Title and subtitle fields, serif body text (Newsreader), justified with hyphenation, smart quotes and dashes, focus mode, typewriter scrolling |
+| **Writing** | Title and subtitle fields, serif body text (Newsreader), justified with hyphenation, adjustable line width (Settings → Line width), smart quotes and dashes, focus mode, typewriter scrolling |
 | **Markdown** | Files are CommonMark/GFM with YAML front matter (`title`, `subtitle`, plus any keys you add, such as `date`, `tags` or `slug`, which are kept as they are) |
 | **Code blocks** | ray.so-style window cards with Shiki syntax highlighting (any language), a language picker and a copy button |
 | **Drawings** | Excalidraw built in, with two styles you can switch between at any time: **Sketch** (hand-drawn) and **Wireframe** (clean lines, grid, snapping) |
@@ -85,6 +85,10 @@ assets/
 | Toggle sidebar | ⌥⌘S |
 | Text size | ⌘= / ⌘- / ⌘0 |
 | Settings | ⌘, |
+
+Type `/` at the start of a line (or after a space) for the block menu: headings,
+lists, quote, code, divider, sketch, wireframe, image and table. Keep typing to
+filter, then press ↵.
 
 Markdown shortcuts work as you type: `#`, `##`, `-`, `1.`, `[ ]`, `>`,
 ` ``` `, `---`, `**bold**`, `_italic_`.

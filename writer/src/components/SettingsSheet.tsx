@@ -42,6 +42,16 @@ export function SettingsSheet({ settings, onChange, onChooseFolder, onClose }: P
           </div>
         </div>
         <div className="field">
+          <span>Line width</span>
+          <div className="segmented">
+            {(['narrow', 'medium', 'wide'] as const).map((w) => (
+              <button key={w} className={settings.lineWidth === w ? 'is-active' : ''} onClick={() => onChange({ lineWidth: w })}>
+                {w[0].toUpperCase() + w.slice(1)}
+              </button>
+            ))}
+          </div>
+        </div>
+        <div className="field">
           <span>Text size</span>
           <input type="range" min={15} max={30} value={settings.fontSize} onChange={(e) => onChange({ fontSize: Number(e.target.value) })} />
           <span className="muted">{settings.fontSize}px</span>

@@ -7,6 +7,7 @@ export type Settings = {
   grammar: boolean;
   sidebar: boolean;
   typewriter: boolean;
+  lineWidth: 'narrow' | 'medium' | 'wide';
 };
 
 export type FileEntry = {

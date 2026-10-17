@@ -53,6 +53,7 @@ const DEFAULT_SETTINGS = {
   grammar: true,
   sidebar: true,
   typewriter: false,
+  lineWidth: 'wide', // 'narrow' | 'medium' | 'wide'
 };
 
 function loadSettings() {

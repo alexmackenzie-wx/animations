@@ -8,6 +8,8 @@ import { GrammarPopover, LinkPopover, SelectionToolbar } from './components/Popo
 import { QuickOpen } from './components/QuickOpen';
 import { SettingsSheet } from './components/SettingsSheet';
 import { Sidebar } from './components/Sidebar';
+import { SlashMenu } from './components/SlashMenu';
+import { slashBus, type SlashState } from './editor/slash';
 import { buildExtensions, runCommand } from './editor/extensions';
 import { refreshGrammar, type LintInfo } from './editor/grammar';
 import { findNext } from './editor/search';
@@ -24,6 +26,9 @@ type SaveStatus = 'saved' | 'saving' | 'unsaved' | 'error';
 const MIN_FONT = 15;
 const MAX_FONT = 30;
 const DEFAULT_FONT = 21;
+
+/** Column width in ems of the body text: roughly 70, 85 and 100 characters per line. */
+const LINE_WIDTHS: Record<Settings['lineWidth'], number> = { narrow: 33, medium: 39, wide: 45 };
 
 /** Resolves the Appearance setting to light/dark and exposes it to CSS as data-theme. */
 function useTheme(pref: Settings['theme'] | undefined) {
@@ -157,6 +162,7 @@ export default function App() {
   const [drawing, setDrawing] = useState<DrawingRequest | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
+  const [slash, setSlash] = useState<SlashState | null>(null);
   const dark = useTheme(settings?.theme);
 
   // Refs give long-lived callbacks (editor extensions, IPC listeners) the latest state.
@@ -386,6 +392,7 @@ export default function App() {
   );
   useEffect(() => window.writer.onSettings(setSettings), []);
   useEffect(() => drawingBus.subscribe(setDrawing), []);
+  useEffect(() => slashBus.subscribe(setSlash), []);
 
   // Find shortcuts also work when the cursor is in the title or nowhere at all.
   // (Inside the editor its own keymap handles them and marks the event handled.)
@@ -444,7 +451,7 @@ export default function App() {
   return (
     <div
       className={['app', showSidebar && 'with-sidebar', focusMode && 'focus-mode', settings.typewriter && 'typewriter'].filter(Boolean).join(' ')}
-      style={{ '--font-size': `${settings.fontSize}px` } as React.CSSProperties}
+      style={{ '--font-size': `${settings.fontSize}px`, '--measure': LINE_WIDTHS[settings.lineWidth ?? 'wide'] } as React.CSSProperties}
     >
       {showSidebar && (
         <Sidebar folder={settings.folder} files={files} current={doc?.path ?? null} onOpen={openFile} onNew={newDoc} onChooseFolder={chooseFolder} />
@@ -567,6 +574,7 @@ export default function App() {
         />
       )}
       {drawing && <DrawingEditor request={drawing} dark={dark} onClose={() => setDrawing(null)} />}
+      {slash && <SlashMenu state={slash} />}
       {toast && <div className="toast">{toast}</div>}
 
       <input

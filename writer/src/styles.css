@@ -157,7 +157,7 @@ select {
 }
 
 .page {
-  max-width: calc(var(--font-size) * 33);
+  max-width: calc(var(--font-size) * var(--measure, 45) + 80px);
   margin: 0 auto;
   padding: 28px 40px 40vh;
   font-size: var(--font-size);
@@ -1351,4 +1351,90 @@ select {
 .main:hover::-webkit-scrollbar-thumb,
 .sidebar__list:hover::-webkit-scrollbar-thumb {
   background-color: var(--rule);
+}
+
+/* ---------- Slash menu ---------- */
+
+.slash-menu {
+  width: 300px;
+  max-height: 340px;
+  overflow-y: auto;
+  padding: 6px;
+}
+
+.slash-menu__group {
+  padding: 8px 10px 4px;
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--faint);
+}
+
+.slash-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  border: 0;
+  background: none;
+  padding: 7px 10px;
+  border-radius: 8px;
+  text-align: left;
+}
+
+.slash-item.is-active {
+  background: var(--accent-soft);
+}
+
+.slash-item__text {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.slash-item__title {
+  font-size: 13.5px;
+  font-weight: 500;
+  color: var(--text);
+}
+
+.slash-item__hint {
+  font-size: 11.5px;
+  color: var(--muted);
+}
+
+.slash-item kbd {
+  flex: none;
+  font-family: var(--sans);
+  font-size: 11px;
+  color: var(--faint);
+  letter-spacing: 0.04em;
+}
+
+.slash-item.is-active kbd {
+  color: var(--muted);
+}
+
+.slash-menu__empty {
+  padding: 10px 12px;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.slash-menu::-webkit-scrollbar {
+  width: 8px;
+}
+
+.slash-menu::-webkit-scrollbar-thumb {
+  background: var(--rule);
+  border-radius: 4px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+
+.slash-menu::-webkit-scrollbar-button {
+  display: none;
 }
