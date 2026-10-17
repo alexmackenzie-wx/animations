@@ -17,15 +17,20 @@ npm install
 npm run dev        # live-reloading development app
 ```
 
-Build a real `Writer.app` (in `release/`):
+### Install as a Mac app
 
 ```bash
 npm run dist
 ```
 
-The app isn't code-signed. The first time you open it, right-click
-`Writer.app` and choose **Open**. If macOS says it is damaged, run
-`xattr -cr /Applications/Writer.app` once.
+This creates `release/Writer-<version>-arm64.dmg`. Open it and drag **Writer**
+into **Applications**. The app is ad-hoc signed rather than signed with an
+Apple Developer ID, so the first launch needs a right-click → **Open**. If
+macOS refuses, run `xattr -cr /Applications/Writer.app` once.
+
+To update later: `git pull`, `npm install`, `npm run dist`, then drag the new
+Writer into Applications and choose **Replace**. Your documents and settings
+are not touched.
 
 ## What's inside
 
