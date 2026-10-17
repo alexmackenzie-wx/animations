@@ -9,7 +9,7 @@ into your blog.
 
 ## Run it
 
-You need [Node.js](https://nodejs.org) 20 or newer.
+You need [Node.js](https://nodejs.org) 22.12 or newer (check with `node -v`).
 
 ```bash
 cd writer
