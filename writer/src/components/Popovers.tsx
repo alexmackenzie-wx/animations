@@ -1,4 +1,5 @@
 import type { Editor } from '@tiptap/core';
+import { TextSelection } from '@tiptap/pm/state';
 import { BubbleMenu } from '@tiptap/react/menus';
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { ignoreLint, refreshGrammar, type LintInfo } from '../editor/grammar';
@@ -15,7 +16,8 @@ export function SelectionToolbar({ editor, onLink }: { editor: Editor; onLink: (
       editor={editor}
       className="toolbar"
       shouldShow={({ editor, state }) =>
-        !state.selection.empty && editor.isEditable && !editor.isActive('codeBlock') && !editor.isActive('drawing') && !editor.isActive('image')
+        // Only for selected text — not for a selected block like an equation, drawing or image.
+        state.selection instanceof TextSelection && !state.selection.empty && editor.isEditable && !editor.isActive('codeBlock')
       }
       options={{ placement: 'top', offset: 10 }}
     >

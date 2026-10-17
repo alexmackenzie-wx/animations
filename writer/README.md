@@ -40,6 +40,8 @@ are not touched.
 | **Markdown** | Files are CommonMark/GFM with YAML front matter (`title`, `subtitle`, plus any keys you add, such as `date`, `tags` or `slug`, which are kept as they are) |
 | **Code blocks** | ray.so-style window cards with Shiki syntax highlighting (any language), a language picker and a copy button |
 | **Drawings** | Excalidraw built in, with two styles you can switch between at any time: **Sketch** (hand-drawn) and **Wireframe** (clean lines, grid, snapping) |
+| **Math** | LaTeX rendered with KaTeX. Inline `$…$` (⇧⌘M) and display `$$…$$` (⌥⌘M, `/equation`, or type `$$` then ↵). Click an equation to edit it with a live preview |
+| **Blocks** | Hover any block for a ⋮⋮ handle: delete, duplicate, move up/down, and add or remove table rows and columns |
 | **Spelling** | The macOS system dictionary. Right-click for suggestions or **Learn Spelling** |
 | **Grammar** | [Harper](https://writewithharper.com), running locally. Click a blue or purple underline to see the suggestion, apply it, or ignore it |
 | **Export** | **Export to Blog** copies the `.md` file and every image or drawing it references into your blog folder |
@@ -85,6 +87,7 @@ assets/
 | Justify / Left / Center / Right | ⇧⌘J / ⇧⌘L / ⇧⌘E / ⇧⌘R |
 | Sketch drawing / Wireframe | ⇧⌘D / ⌥⌘D |
 | Image / Table / Divider | ⇧⌘I / ⌥⌘T / ⇧⌘- |
+| Inline math / Equation | ⇧⌘M / ⌥⌘M |
 | Find / Find and replace | ⌘F / ⌥⌘F (⌘G, ⇧⌘G to step through matches) |
 | Focus mode / Typewriter scrolling | ⇧⌘F / ⇧⌘T |
 | Toggle sidebar | ⌥⌘S |
@@ -92,7 +95,7 @@ assets/
 | Settings | ⌘, |
 
 Type `/` at the start of a line (or after a space) for the block menu: headings,
-lists, quote, code, divider, sketch, wireframe, image and table. Keep typing to
+lists, quote, code, divider, sketch, wireframe, equation, inline math, image and table. Keep typing to
 filter, then press ↵.
 
 Markdown shortcuts work as you type: `#`, `##`, `-`, `1.`, `[ ]`, `>`,

@@ -18,6 +18,7 @@ import { Grammar, type GrammarOptions } from './grammar';
 import { Search } from './search';
 import { highlightPlugin } from './highlight';
 import { SlashCommand } from './slash';
+import { mathExtensions } from './math';
 
 /** Marks the top-level block holding the cursor, so focus mode can dim the rest. */
 const FocusBlock = Extension.create({
@@ -74,6 +75,8 @@ const Shortcuts = Extension.create<AppHooks>({
       'Mod-Alt-t': run('table'),
       'Mod-Shift--': run('divider'),
       'Mod-Shift-i': run('image'),
+      'Mod-Shift-m': run('mathInline'),
+      'Mod-Alt-m': run('mathBlock'),
       'Mod-f': run('find'),
       'Mod-Alt-f': run('replace'),
       'Mod-g': run('findNext'),
@@ -118,6 +121,7 @@ export function buildExtensions(hooks: AppHooks, grammar: Partial<GrammarOptions
     Highlight,
     Shortcuts.configure(hooks),
     SlashCommand.configure(hooks),
+    ...mathExtensions((target) => hooks.command('editMath', target)),
   ];
 }
 
@@ -146,6 +150,12 @@ export function runCommand(editor: Editor, name: string, arg: unknown, app: AppH
     case 'divider': return c.setHorizontalRule().run();
     case 'table': return c.insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run();
     case 'drawing': return c.insertDrawing(arg === 'wireframe' ? 'wireframe' : 'sketch').run();
+    case 'mathInline':
+    case 'mathBlock': {
+      const { from, to } = editor.state.selection;
+      const latex = editor.state.doc.textBetween(from, to, ' ');
+      return app('editMath', { kind: name === 'mathBlock' ? 'block' : 'inline', pos: null, latex });
+    }
     default: return app(name, arg);
   }
 }

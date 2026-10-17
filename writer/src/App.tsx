@@ -9,6 +9,9 @@ import { QuickOpen } from './components/QuickOpen';
 import { SettingsSheet } from './components/SettingsSheet';
 import { Sidebar } from './components/Sidebar';
 import { SlashMenu } from './components/SlashMenu';
+import { MathEditor } from './components/MathEditor';
+import { BlockHandle } from './components/BlockHandle';
+import type { MathTarget } from './editor/math';
 import { slashBus, type SlashState } from './editor/slash';
 import { buildExtensions, runCommand } from './editor/extensions';
 import { refreshGrammar, type LintInfo } from './editor/grammar';
@@ -163,6 +166,7 @@ export default function App() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const [slash, setSlash] = useState<SlashState | null>(null);
+  const [mathTarget, setMathTarget] = useState<MathTarget | null>(null);
   const dark = useTheme(settings?.theme);
 
   // Refs give long-lived callbacks (editor extensions, IPC listeners) the latest state.
@@ -353,6 +357,7 @@ export default function App() {
         return updateSettings({ grammar: on }).then(() => ed && refreshGrammar(ed.view));
       }
       case 'link': return ed && setLinkOpen(true);
+      case 'editMath': return ed && setMathTarget(arg as MathTarget);
       case 'image': return imageInput.current?.click();
       case 'find':
       case 'replace':
@@ -575,6 +580,8 @@ export default function App() {
       )}
       {drawing && <DrawingEditor request={drawing} dark={dark} onClose={() => setDrawing(null)} />}
       {slash && <SlashMenu state={slash} />}
+      {mathTarget && editor && <MathEditor editor={editor} target={mathTarget} onClose={() => setMathTarget(null)} />}
+      {editor && !focusMode && !drawing && <BlockHandle editor={editor} />}
       {toast && <div className="toast">{toast}</div>}
 
       <input

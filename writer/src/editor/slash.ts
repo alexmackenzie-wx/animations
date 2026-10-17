@@ -27,6 +27,8 @@ export const SLASH_ITEMS: SlashItem[] = [
   { group: 'Lists', title: 'Checklist', hint: 'Tasks with checkboxes', keys: '⇧⌘9', aliases: ['todo', 'task', 'checkbox'], command: 'taskList' },
   { group: 'Media', title: 'Sketch', hint: 'Hand-drawn diagram', keys: '⇧⌘D', aliases: ['drawing', 'draw', 'excalidraw', 'diagram'], command: 'drawing', arg: 'sketch' },
   { group: 'Media', title: 'Wireframe', hint: 'Clean boxes-and-lines diagram', keys: '⌥⌘D', aliases: ['diagram', 'mockup', 'ui'], command: 'drawing', arg: 'wireframe' },
+  { group: 'Media', title: 'Equation', hint: 'LaTeX, displayed on its own line', keys: '⌥⌘M', aliases: ['math', 'latex', 'formula', 'tex', 'katex'], command: 'mathBlock' },
+  { group: 'Media', title: 'Inline math', hint: 'LaTeX within a sentence', keys: '⇧⌘M', aliases: ['math', 'latex', 'formula', 'tex', '$'], command: 'mathInline' },
   { group: 'Media', title: 'Image', hint: 'Upload from your Mac', keys: '⇧⌘I', aliases: ['picture', 'photo', 'img'], command: 'image' },
   { group: 'Media', title: 'Table', hint: '3 × 3 grid', keys: '⌥⌘T', aliases: ['grid'], command: 'table' },
 ];
