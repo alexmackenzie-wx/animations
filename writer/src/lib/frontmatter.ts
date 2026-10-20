@@ -48,3 +48,7 @@ export function serializeDoc(doc: Doc): string {
 }
 
 export const countWords = (s: string) => (s.match(/[\p{L}\p{N}’'-]+/gu) || []).length;
+
+/** Words in a Markdown file, ignoring front matter and HTML markup (embeds, SVG). */
+export const countMarkdownWords = (md: string) =>
+  countWords(md.replace(/^---[\s\S]*?---/, '').replace(/<(script|style)[\s\S]*?<\/\1>/gi, ' ').replace(/<[^>]+>/g, ' '));

@@ -14,6 +14,7 @@ const DIST = path.join(__dirname, '..', 'dist');
 // WebAssembly (grammar checker) and workers (drawing fonts) behave like the web.
 protocol.registerSchemesAsPrivileged([
   { scheme: 'app', privileges: { standard: true, secure: true, supportFetchAPI: true, corsEnabled: true } },
+  { scheme: 'embed', privileges: { standard: true, secure: true, supportFetchAPI: true, corsEnabled: true } },
 ]);
 
 function serveApp() {
@@ -23,6 +24,51 @@ function serveApp() {
     if (!file.startsWith(DIST)) return new Response('Not found', { status: 404 });
     return net.fetch(pathToFileURL(file).toString());
   });
+
+  // HTML blocks render in sandboxed iframes served from embed://<id>/. Each one is
+  // its own opaque origin, so its scripts can animate but cannot reach the app.
+  // Relative URLs (./draw.js, assets/x.png) resolve against the document's folder.
+  protocol.handle('embed', async (req) => {
+    const url = new URL(req.url);
+    const entry = embeds.get(url.hostname);
+    if (!entry) return new Response('Not found', { status: 404 });
+    const headers = { 'Content-Security-Policy': EMBED_CSP };
+    if (url.pathname === '/' || url.pathname === '/index.html') {
+      return new Response(entry.html, { headers: { ...headers, 'Content-Type': 'text/html; charset=utf-8' } });
+    }
+    const file = path.normalize(path.join(entry.dir, decodeURIComponent(url.pathname)));
+    const inFolder = settings.folder && !path.relative(settings.folder, file).startsWith('..');
+    if (!inFolder || !fssync.existsSync(file)) return new Response('Not found', { status: 404 });
+    const res = await net.fetch(pathToFileURL(file).toString());
+    return new Response(res.body, { headers: { ...headers, 'Content-Type': res.headers.get('content-type') || 'application/octet-stream' } });
+  });
+}
+
+const EMBED_CSP = "default-src * data: blob: 'unsafe-inline' 'unsafe-eval'; frame-ancestors app: http://localhost:5173";
+/** @type {Map<string, { html: string, dir: string }>} */
+const embeds = new Map();
+let embedSeq = 0;
+
+/** Height reporter injected into every embed so the editor can size the iframe. */
+// Measures the content's extent rather than the viewport, so pages styled
+// `height: 100%` still report their real size.
+const EMBED_RESIZE = `<style>html{overflow:hidden}</style><script>(()=>{let last=0;const measure=()=>{const b=document.body;if(!b)return 0;let bottom=0;for(const el of b.querySelectorAll('*')){const r=el.getBoundingClientRect();if(r.width||r.height)bottom=Math.max(bottom,r.bottom+scrollY);}const cs=getComputedStyle(b);return Math.ceil(bottom+parseFloat(cs.paddingBottom||0)+parseFloat(cs.marginBottom||0));};const send=()=>{const h=measure();if(Math.abs(h-last)>1){last=h;parent.postMessage({writerEmbed:true,height:h},'*');}};new ResizeObserver(send).observe(document.documentElement);addEventListener('load',()=>{send();setTimeout(send,300);setTimeout(send,1500);});send();})();</script>`;
+const EMBED_BASE_STYLE = '<style>html,body{margin:0;background:transparent}svg{max-width:100%}</style>';
+
+function buildEmbedDocument(html) {
+  if (/^\s*(<!doctype\s|<html[\s>])/i.test(html)) {
+    // A full document: keep it whole, add the height reporter.
+    return /<\/body>/i.test(html) ? html.replace(/<\/body>/i, `${EMBED_RESIZE}</body>`) : html + EMBED_RESIZE;
+  }
+  return `<!doctype html><html><head><meta charset="utf-8">${EMBED_BASE_STYLE}</head><body>${html}${EMBED_RESIZE}</body></html>`;
+}
+
+function registerEmbed(docPath, html) {
+  const id = `e${(++embedSeq).toString(36)}`;
+  embeds.set(id, { html: buildEmbedDocument(html), dir: path.dirname(docPath) });
+  // Keep memory bounded: previews are re-registered whenever they're shown.
+  if (embeds.size > 300) embeds.delete(embeds.keys().next().value);
+  return `embed://${id}/index.html`;
 }
 
 /** @type {BrowserWindow | null} */
@@ -111,7 +157,7 @@ async function listMarkdown(root, dir = root, depth = 0, out = []) {
         name: e.name,
         title: readTitle(text) || e.name.replace(/\.(md|markdown)$/i, ''),
         mtime: stat.mtimeMs,
-        words: (text.replace(/^---[\s\S]*?---/, '').match(/\S+/g) || []).length,
+        words: (text.replace(/^---[\s\S]*?---/, '').replace(/<(script|style)[\s\S]*?<\/\1>/gi, ' ').replace(/<[^>]+>/g, ' ').match(/\S+/g) || []).length,
       });
     }
   }
@@ -276,6 +322,8 @@ function registerIpc() {
   // The renderer flushes unsaved edits before the window is allowed to close.
   ipcMain.handle('app:closeReady', () => finishClose());
 
+  ipcMain.handle('embed:register', (_e, docPath, html) => registerEmbed(guard(docPath), String(html)));
+
   ipcMain.handle('spell:learn', (_e, word) => win.webContents.session.addWordToSpellCheckerDictionary(word));
 }
 
@@ -391,6 +439,7 @@ function buildMenu() {
         item('Sketch Drawing', 'CmdOrCtrl+Shift+D', 'drawing', { arg: 'sketch' }),
         item('Wireframe Diagram', 'CmdOrCtrl+Alt+D', 'drawing', { arg: 'wireframe' }),
         { type: 'separator' },
+        item('HTML / SVG Embed', 'CmdOrCtrl+Alt+H', 'htmlBlock'),
         item('Equation', 'CmdOrCtrl+Alt+M', 'mathBlock'),
         item('Inline Math', 'CmdOrCtrl+Shift+M', 'mathInline'),
         { type: 'separator' },

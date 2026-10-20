@@ -41,6 +41,7 @@ are not touched.
 | **Code blocks** | ray.so-style window cards with Shiki syntax highlighting (any language), a language picker and a copy button |
 | **Drawings** | Excalidraw built in, with two styles you can switch between at any time: **Sketch** (hand-drawn) and **Wireframe** (clean lines, grid, snapping) |
 | **Math** | LaTeX rendered with KaTeX. Inline `$…$` (⇧⌘M) and display `$$…$$` (⌥⌘M, `/equation`, or type `$$` then ↵). Click an equation to edit it with a live preview |
+| **HTML & SVG** | Embed raw HTML: SVG animations, widgets, iframes (`/html`, ⌥⌘H). It's written to the Markdown verbatim and previewed live in a sandbox where scripts run but can't reach the app. Full HTML pages are published inside a self-sizing `<iframe>` so their styles can't leak into your blog |
 | **Blocks** | Hover any block for a ⋮⋮ handle: delete, duplicate, move up/down, and add or remove table rows and columns |
 | **Spelling** | The macOS system dictionary. Right-click for suggestions or **Learn Spelling** |
 | **Grammar** | [Harper](https://writewithharper.com), running locally. Click a blue or purple underline to see the suggestion, apply it, or ignore it |
@@ -88,6 +89,7 @@ assets/
 | Sketch drawing / Wireframe | ⇧⌘D / ⌥⌘D |
 | Image / Table / Divider | ⇧⌘I / ⌥⌘T / ⇧⌘- |
 | Inline math / Equation | ⇧⌘M / ⌥⌘M |
+| HTML / SVG embed | ⌥⌘H |
 | Find / Find and replace | ⌘F / ⌥⌘F (⌘G, ⇧⌘G to step through matches) |
 | Focus mode / Typewriter scrolling | ⇧⌘F / ⇧⌘T |
 | Toggle sidebar | ⌥⌘S |
@@ -95,7 +97,7 @@ assets/
 | Settings | ⌘, |
 
 Type `/` at the start of a line (or after a space) for the block menu: headings,
-lists, quote, code, divider, sketch, wireframe, equation, inline math, image and table. Keep typing to
+lists, quote, code, divider, sketch, wireframe, equation, inline math, HTML embed, image and table. Keep typing to
 filter, then press ↵.
 
 Markdown shortcuts work as you type: `#`, `##`, `-`, `1.`, `[ ]`, `>`,

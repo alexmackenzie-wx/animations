@@ -19,6 +19,7 @@ import { Search } from './search';
 import { highlightPlugin } from './highlight';
 import { SlashCommand } from './slash';
 import { mathExtensions } from './math';
+import { HtmlBlock } from './HtmlBlock';
 
 /** Marks the top-level block holding the cursor, so focus mode can dim the rest. */
 const FocusBlock = Extension.create({
@@ -77,6 +78,7 @@ const Shortcuts = Extension.create<AppHooks>({
       'Mod-Shift-i': run('image'),
       'Mod-Shift-m': run('mathInline'),
       'Mod-Alt-m': run('mathBlock'),
+      'Mod-Alt-h': run('htmlBlock'),
       'Mod-f': run('find'),
       'Mod-Alt-f': run('replace'),
       'Mod-g': run('findNext'),
@@ -101,6 +103,7 @@ export function buildExtensions(hooks: AppHooks, grammar: Partial<GrammarOptions
     FancyCodeBlock,
     LocalImage,
     Drawing,
+    HtmlBlock,
     TaskList,
     TaskItem.configure({ nested: true }),
     MixedTaskLists,
@@ -150,6 +153,7 @@ export function runCommand(editor: Editor, name: string, arg: unknown, app: AppH
     case 'divider': return c.setHorizontalRule().run();
     case 'table': return c.insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run();
     case 'drawing': return c.insertDrawing(arg === 'wireframe' ? 'wireframe' : 'sketch').run();
+    case 'htmlBlock': return c.insertHtmlBlock().run();
     case 'mathInline':
     case 'mathBlock': {
       const { from, to } = editor.state.selection;

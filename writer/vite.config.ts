@@ -10,6 +10,7 @@ const CSP = [
   "script-src 'self' 'wasm-unsafe-eval'",
   "worker-src 'self' blob:",
   "connect-src 'self' data: blob:",
+  'frame-src embed:',
 ].join('; ');
 
 const csp = () => ({

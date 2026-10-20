@@ -10,6 +10,8 @@ import { SettingsSheet } from './components/SettingsSheet';
 import { Sidebar } from './components/Sidebar';
 import { SlashMenu } from './components/SlashMenu';
 import { MathEditor } from './components/MathEditor';
+import { HtmlEditor } from './components/HtmlEditor';
+import { htmlBus, type HtmlRequest } from './lib/htmlBus';
 import { BlockHandle } from './components/BlockHandle';
 import type { MathTarget } from './editor/math';
 import { slashBus, type SlashState } from './editor/slash';
@@ -19,7 +21,7 @@ import { findNext } from './editor/search';
 import type { FileEntry, Settings } from './global';
 import { docContext } from './lib/docContext';
 import { drawingBus, type DrawingRequest } from './lib/drawingBus';
-import { countWords, parseDoc, serializeDoc, type Doc } from './lib/frontmatter';
+import { countMarkdownWords, countWords, parseDoc, serializeDoc, type Doc } from './lib/frontmatter';
 
 /** `id` identifies one opening of a file, so renaming it doesn't recreate the editor. */
 type OpenDoc = Doc & { path: string; id: number };
@@ -167,6 +169,7 @@ export default function App() {
   const [toast, setToast] = useState<string | null>(null);
   const [slash, setSlash] = useState<SlashState | null>(null);
   const [mathTarget, setMathTarget] = useState<MathTarget | null>(null);
+  const [htmlRequest, setHtmlRequest] = useState<HtmlRequest | null>(null);
   const dark = useTheme(settings?.theme);
 
   // Refs give long-lived callbacks (editor extensions, IPC listeners) the latest state.
@@ -223,7 +226,7 @@ export default function App() {
       await window.writer.writeFile(d.path, text);
       setStatus(dirty.current ? 'unsaved' : 'saved');
       setFiles((fs) => {
-        const entry = { title: d.title || 'Untitled', mtime: Date.now(), words: countWords(text.replace(/^---[\s\S]*?---/, '')) };
+        const entry = { title: d.title || 'Untitled', mtime: Date.now(), words: countMarkdownWords(text) };
         const others = fs.filter((f) => f.path !== d.path);
         const prev = fs.find((f) => f.path === d.path);
         return prev ? [{ ...prev, ...entry }, ...others] : fs;
@@ -241,7 +244,8 @@ export default function App() {
     clearTimeout(saveTimer.current);
     saveTimer.current = setTimeout(save, 800);
     const ed = editorRef.current;
-    if (ed) setWords((ed.storage as any).characterCount.words());
+    // Count only prose: atoms like embeds, drawings and equations contribute nothing.
+    if (ed) setWords(countWords(ed.state.doc.textBetween(0, ed.state.doc.content.size, ' ', ' ')));
   }, [save]);
 
   const openFile = useCallback(
@@ -251,7 +255,7 @@ export default function App() {
         const parsed = parseDoc(await window.writer.readFile(path));
         docContext.path = path;
         setDoc({ ...parsed, path, id: nextDocId++ });
-        setWords(countWords(parsed.body));
+        setWords(countMarkdownWords(parsed.body));
         setStatus('saved');
         setLint(null);
         setQuickOpen(false);
@@ -398,6 +402,7 @@ export default function App() {
   useEffect(() => window.writer.onSettings(setSettings), []);
   useEffect(() => drawingBus.subscribe(setDrawing), []);
   useEffect(() => slashBus.subscribe(setSlash), []);
+  useEffect(() => htmlBus.subscribe(setHtmlRequest), []);
 
   // Find shortcuts also work when the cursor is in the title or nowhere at all.
   // (Inside the editor its own keymap handles them and marks the event handled.)
@@ -581,7 +586,8 @@ export default function App() {
       {drawing && <DrawingEditor request={drawing} dark={dark} onClose={() => setDrawing(null)} />}
       {slash && <SlashMenu state={slash} />}
       {mathTarget && editor && <MathEditor editor={editor} target={mathTarget} onClose={() => setMathTarget(null)} />}
-      {editor && !focusMode && !drawing && <BlockHandle editor={editor} />}
+      {editor && !focusMode && !drawing && !htmlRequest && <BlockHandle editor={editor} />}
+      {htmlRequest && <HtmlEditor request={htmlRequest} onClose={() => setHtmlRequest(null)} />}
       {toast && <div className="toast">{toast}</div>}
 
       <input

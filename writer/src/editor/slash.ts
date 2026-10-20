@@ -29,6 +29,7 @@ export const SLASH_ITEMS: SlashItem[] = [
   { group: 'Media', title: 'Wireframe', hint: 'Clean boxes-and-lines diagram', keys: '⌥⌘D', aliases: ['diagram', 'mockup', 'ui'], command: 'drawing', arg: 'wireframe' },
   { group: 'Media', title: 'Equation', hint: 'LaTeX, displayed on its own line', keys: '⌥⌘M', aliases: ['math', 'latex', 'formula', 'tex', 'katex'], command: 'mathBlock' },
   { group: 'Media', title: 'Inline math', hint: 'LaTeX within a sentence', keys: '⇧⌘M', aliases: ['math', 'latex', 'formula', 'tex', '$'], command: 'mathInline' },
+  { group: 'Media', title: 'HTML / SVG embed', hint: 'Raw HTML, SVG animation or iframe', keys: '⌥⌘H', aliases: ['html', 'svg', 'embed', 'iframe', 'animation', 'widget'], command: 'htmlBlock' },
   { group: 'Media', title: 'Image', hint: 'Upload from your Mac', keys: '⇧⌘I', aliases: ['picture', 'photo', 'img'], command: 'image' },
   { group: 'Media', title: 'Table', hint: '3 × 3 grid', keys: '⌥⌘T', aliases: ['grid'], command: 'table' },
 ];

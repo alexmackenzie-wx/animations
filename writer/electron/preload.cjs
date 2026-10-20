@@ -22,6 +22,7 @@ contextBridge.exposeInMainWorld('writer', {
   exportBlog: invoke('export:blog'),
   learnWord: invoke('spell:learn'),
   closeReady: invoke('app:closeReady'),
+  registerEmbed: invoke('embed:register'),
   onMenu: (fn) => {
     const listener = (_e, command, arg) => fn(command, arg);
     ipcRenderer.on('menu', listener);

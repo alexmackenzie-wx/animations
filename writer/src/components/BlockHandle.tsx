@@ -20,6 +20,7 @@ const LABELS: Record<string, string> = {
   drawing: 'Drawing',
   image: 'Image',
   blockMath: 'Equation',
+  htmlBlock: 'HTML block',
   horizontalRule: 'Divider',
 };
 

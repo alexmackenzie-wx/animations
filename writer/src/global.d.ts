@@ -43,6 +43,7 @@ declare global {
       exportBlog(docPath: string, markdown: string, choose?: boolean): Promise<string | null>;
       learnWord(word: string): Promise<void>;
       closeReady(): Promise<void>;
+      registerEmbed(docPath: string, html: string): Promise<string>;
       onMenu(fn: (command: string, arg?: unknown) => void): Unsubscribe;
       onSettings(fn: (s: Settings) => void): Unsubscribe;
     };
